@@ -44,6 +44,10 @@ services:
       - "8761:8761"
     depends_on:
       - postgres
+    environment:
+    - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+    - EUREKA_CLIENT_FETCH_REGISTRY=false
+    - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
 
 volumes:
   hotel_pg_data:
