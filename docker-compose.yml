@@ -2,32 +2,36 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:15
-    container_name: hotel_postgres
+    image: postgres:12
+    container_name: hotel-postgres
     environment:
       POSTGRES_USER: hoteluser
       POSTGRES_PASSWORD: hotelpass
       POSTGRES_DB: hoteldb
+      TZ: Asia/Kolkata
+    command: ["-c", "timezone=Asia/Kolkata"]
     ports:
       - "5432:5432"
     volumes:
       - hotel_pg_data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 
   redis:
     image: redis:7
-    container_name: hotel_redis
+    container_name: hotel-redis
     ports:
       - "6379:6379"
 
   zookeeper:
     image: wurstmeister/zookeeper
-    container_name: hotel_zookeeper
+    container_name: hotel-zookeeper
     ports:
       - "2181:2181"
 
   kafka:
     image: wurstmeister/kafka
-    container_name: hotel_kafka
+    container_name: hotel-kafka
     depends_on:
       - zookeeper
     environment:
@@ -39,15 +43,29 @@ services:
 
   eureka-server:
     build: ./config-server
-    container_name: hotel_eureka
+    container_name: hotel-eureka
     ports:
       - "8761:8761"
     depends_on:
       - postgres
     environment:
-    - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
-    - EUREKA_CLIENT_FETCH_REGISTRY=false
-    - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+
+  staff-service:
+    build: ./staff-service
+    container_name: hotel-staff-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoteldb
+      SPRING_DATASOURCE_USERNAME: hoteluser
+      SPRING_DATASOURCE_PASSWORD: hotelpass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hotel-eureka:8761/eureka/
 
 volumes:
   hotel_pg_data:
