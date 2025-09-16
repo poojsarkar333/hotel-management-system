@@ -101,6 +101,38 @@ services:
     networks:
       - hotel-network
       
+  order-service:
+    build: ./order-service
+    container_name: hotel-order-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoteldb
+      SPRING_DATASOURCE_USERNAME: hoteluser
+      SPRING_DATASOURCE_PASSWORD: hotelpass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hotel-eureka:8761/eureka/
+    networks:
+      - hotel-network
+      
+  billing-service:
+    build: ./billing-service
+    container_name: hotel-billing-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoteldb
+      SPRING_DATASOURCE_USERNAME: hoteluser
+      SPRING_DATASOURCE_PASSWORD: hotelpass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hotel-eureka:8761/eureka/
+    networks:
+      - hotel-network
+      
 networks:
   hotel-network:
     driver: bridge
