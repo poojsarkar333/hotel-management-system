@@ -109,11 +109,13 @@ services:
     depends_on:
       - postgres
       - eureka-server
+      - kafka
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoteldb
       SPRING_DATASOURCE_USERNAME: hoteluser
       SPRING_DATASOURCE_PASSWORD: hotelpass
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hotel-eureka:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - hotel-network
       
@@ -125,11 +127,13 @@ services:
     depends_on:
       - postgres
       - eureka-server
+      - kafka
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoteldb
       SPRING_DATASOURCE_USERNAME: hoteluser
       SPRING_DATASOURCE_PASSWORD: hotelpass
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hotel-eureka:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - hotel-network
       
