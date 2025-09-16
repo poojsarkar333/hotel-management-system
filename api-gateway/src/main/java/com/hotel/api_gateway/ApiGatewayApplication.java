@@ -3,8 +3,8 @@ package com.hotel.api_gateway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.server.WebFilter;
 
 import com.hotel.api_gateway.security.JwtApiGatewayAuthenticationFilter;
 
@@ -17,7 +17,7 @@ public class ApiGatewayApplication {
 	}
 	
 	@Bean
-    public WebFilter jwtAuthenticationFilter(JwtApiGatewayAuthenticationFilter filter) {
+    public GlobalFilter jwtAuthenticationFilter(JwtApiGatewayAuthenticationFilter filter) {
         return filter;
     }
 
