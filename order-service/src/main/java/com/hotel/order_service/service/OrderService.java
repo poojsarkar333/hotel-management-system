@@ -15,12 +15,13 @@ import com.hotel.order_service.repo.OrderRepository;
 @Service
 public class OrderService {
 	
+	@Autowired
     private OrderRepository orderRepository;
 
     @Autowired
     private RoomServiceClient roomServiceClient;
 
-    public OrderDTO createOrder(Long roomId) {
+    public OrderDTO createOrder(String roomId) {
         RoomDTO room = roomServiceClient.getRoomById(roomId);
         // process order based on room
         return new OrderDTO(1L, room.getRoomId(), "CONFIRMED");

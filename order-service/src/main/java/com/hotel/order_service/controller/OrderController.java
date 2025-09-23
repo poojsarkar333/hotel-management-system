@@ -2,31 +2,46 @@ package com.hotel.order_service.controller;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.order_service.dto.Order;
+import com.hotel.order_service.dto.OrderDTO;
+import com.hotel.order_service.service.OrderKafkaService;
 import com.hotel.order_service.service.OrderService;
 
 @RestController
 @RequestMapping("/orders")
 public class OrderController {
-    private final OrderService orderService;
+	
+	@Autowired
+    private  OrderService orderService;
+	
+	@Autowired
+	private OrderKafkaService orderKafkaService;
+    
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
-    @GetMapping
+    @GetMapping("/get")
     public List<Order> getOrders() {
         return orderService.getAllOrders();
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public Order createOrder(@RequestBody Order order) {
         return orderService.createOrder(order);
+    }
+    
+    @PostMapping("/createKafkaOrder/{roomId}")
+    public String createKafkaOrder(@PathVariable String roomId, @RequestBody Order order) {
+        return orderKafkaService.createOrder(roomId, order);
     }
 }
 

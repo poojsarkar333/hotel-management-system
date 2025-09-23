@@ -2,12 +2,12 @@ package com.hotel.order_service.dto;
 
 public class OrderDTO {
     private Long orderId;
-    private Long roomId;
+    private String roomId;
     private String status;
 
     // constructors
     public OrderDTO() {}
-    public OrderDTO(Long orderId, Long roomId, String status) {
+    public OrderDTO(Long orderId, String roomId, String status) {
         this.orderId = orderId;
         this.roomId = roomId;
         this.status = status;
@@ -19,10 +19,10 @@ public class OrderDTO {
 	public void setOrderId(Long orderId) {
 		this.orderId = orderId;
 	}
-	public Long getRoomId() {
+	public String getRoomId() {
 		return roomId;
 	}
-	public void setRoomId(Long roomId) {
+	public void setRoomId(String roomId) {
 		this.roomId = roomId;
 	}
 	public String getStatus() {
