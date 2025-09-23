@@ -6,11 +6,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.hotel.order_service.dto.RoomDTO;
 
-@FeignClient(name = "room-service", fallback = RoomServiceFallback.class)
+@FeignClient(name = "localhost:8082", fallback = RoomServiceFallback.class)
 public interface RoomServiceClient {
 
-    @GetMapping("/rooms/{roomId}")
-    RoomDTO getRoomById(@PathVariable("roomId") Long roomId);
+    @GetMapping("/rooms/getRoom/{roomId}")
+	RoomDTO getRoomById(@PathVariable("roomId") String roomId);
 }
 
 

@@ -8,7 +8,7 @@ import com.hotel.order_service.dto.RoomDTO;
 public class RoomServiceFallback implements RoomServiceClient {
 
     @Override
-    public RoomDTO getRoomById(Long roomId) {
+    public RoomDTO getRoomById(String roomId) {
         // Provide default behavior when room-service is down
         return new RoomDTO(roomId, "Unavailable", "Fallback description", 0);
     }
