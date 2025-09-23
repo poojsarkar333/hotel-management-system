@@ -1,11 +1,5 @@
-# hotel-management-system
-Java microservices architecture for hotel management with role-based access, event-driven design, and AI integration.
-
 # Hotel Management Microservices System
-
-[![Build Status](https://img.shields.io/github/workflow/status/your-username/hotel-management/CI)](https://github.com/your-username/hotel-management/actions)  
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)  
-[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://www.docker.com/)
+Java microservices architecture for hotel management with role-based access, event-driven design, and AI integration.
 
 ---
 
