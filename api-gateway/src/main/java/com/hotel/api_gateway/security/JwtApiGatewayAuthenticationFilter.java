@@ -1,55 +1,82 @@
 package com.hotel.api_gateway.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
 import reactor.core.publisher.Mono;
 
 @Component
-public class JwtApiGatewayAuthenticationFilter implements GlobalFilter, Ordered {
+public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private Environment env; // gets values from Config Server
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getURI().getPath();
-        // Skip authentication for login
-        if (path.startsWith("/auth")) {
-            return chain.filter(exchange);
-        }
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
 
-        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
         String token = authHeader.substring(7);
-        try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(jwtSecret.getBytes())
-                    .parseClaimsJws(token)
-                    .getBody();
-            // Optionally: you can set claims in headers for downstream services
-            return chain.filter(exchange);
-        } catch (Exception e) {
+        if (!jwtUtil.validateToken(token)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
+
+        List<String> userRoles = jwtUtil.extractRoles(token);
+        String serviceKey = resolveServiceKey(path);
+
+        if (serviceKey != null) {
+            String allowedRolesStr = env.getProperty("roles.access." + serviceKey, "");
+            List<String> allowedRoles = Arrays.asList(allowedRolesStr.split(","));
+
+            boolean authorized = userRoles.stream().anyMatch(allowedRoles::contains);
+            if (!authorized) {
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
+        }
+
+        // Forward with user info
+        ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
+                .header("X-Auth-User", jwtUtil.extractUsername(token))
+                .header("X-Auth-Roles", String.join(",", userRoles))
+                .build();
+
+        return chain.filter(exchange.mutate().request(modifiedRequest).build());
     }
 
-    @Override
-    public int getOrder() {
-        return -1; // run early in the filter chain
+    // Map path prefix to service keys in config
+    private String resolveServiceKey(String path) {
+        if (path.startsWith("/staff")) return "staff-service";
+        if (path.startsWith("/rooms")) return "room-service";
+        if (path.startsWith("/orders")) return "order-service";
+        if (path.startsWith("/billing")) return "billing-service";
+        return null; // fallback for open endpoints
     }
+
 }
 
 
