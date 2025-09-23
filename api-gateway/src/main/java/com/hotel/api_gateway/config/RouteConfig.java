@@ -7,16 +7,18 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RouteConfig {
-
-    @Bean
-    public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
+	
+	@Bean
+    public RouteLocator routes(RouteLocatorBuilder builder) {
         return builder.routes()
+                .route("staff-service", r -> r.path("/staff/**")
+                        .uri("lb://STAFF-SERVICE"))
                 .route("room-service", r -> r.path("/rooms/**")
-                        .uri("lb://room-service"))
+                        .uri("lb://ROOM-SERVICE"))
                 .route("order-service", r -> r.path("/orders/**")
-                        .uri("lb://order-service"))
-                .route("staff-service", r -> r.path("/auth/**")
-                        .uri("lb://staff-service"))
+                        .uri("lb://ORDER-SERVICE"))
+                .route("billing-service", r -> r.path("/billing/**")
+                        .uri("lb://BILLING-SERVICE"))
                 .build();
     }
 }
