@@ -5,9 +5,11 @@ import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 
+@Component
 @RefreshScope
 @ConfigurationProperties(prefix = "roles.access")
 public class RoleAccessConfig {
