@@ -15,8 +15,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j;
 
 @Component
+@Log4j
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -27,6 +29,8 @@ public class JwtFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain)
             throws ServletException, IOException {
+    	
+    	logger.info("Inside JwtFilter : doFilterInternal()");
 
         String authorizationHeader = request.getHeader("Authorization");
 
@@ -52,7 +56,11 @@ public class JwtFilter extends OncePerRequestFilter {
     
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getServletPath().startsWith("/auth/");
+        // Skip filtering login endpoints
+    	logger.info("Inside JwtFilter : shouldNotFilter()");
+        String path = request.getServletPath();
+        return path.startsWith("/auth");
     }
+    
 }
 
