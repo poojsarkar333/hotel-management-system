@@ -10,14 +10,26 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class JwtUtil {
 
     @Value("${jwt.secret}")
     private String secret;
+    
+    private Key key;
 
-    private final Key key = Keys.hmacShaKeyFor(secret.getBytes());
+    @PostConstruct
+    public void init() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("Missing jwt.secret property");
+        }
+        if (secret.length() < 32) {
+            throw new IllegalArgumentException("jwt.secret must be at least 32 characters long for HS256");
+        }
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+    }
 
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
