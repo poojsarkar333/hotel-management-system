@@ -1,14 +1,15 @@
 package com.hotel.api_gateway.security;
 
-import java.security.Key;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -18,18 +19,19 @@ public class JwtUtil {
 
     @Value("${jwt.secret}")
     private String secret;
-    
-    private Key key;
+
+    private SecretKey key;
 
     @PostConstruct
     public void init() {
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("Missing jwt.secret property");
         }
-        if (secret.length() < 32) {
-            throw new IllegalArgumentException("jwt.secret must be at least 32 characters long for HS256");
+        // HS512 requires at least 64 bytes
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 64) {
+            throw new IllegalArgumentException("jwt.secret must be at least 64 bytes for HS512");
         }
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public Claims extractAllClaims(String token) {
@@ -59,9 +61,10 @@ public class JwtUtil {
         try {
             extractAllClaims(token);
             return true;
-        } catch (JwtException e) {
+        } catch (Exception e) {
             return false;
         }
     }
 }
+
 

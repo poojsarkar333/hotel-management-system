@@ -1,5 +1,6 @@
 package com.hotel.api_gateway.security;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -7,12 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.env.Environment;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.hotel.api_gateway.config.RoleAccessConfig;
 
 import reactor.core.publisher.Mono;
 
@@ -24,9 +27,11 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
-
+    
     @Autowired
-    private Environment env; // gets values from Config Server
+    private RoleAccessConfig roleAccessConfig;  // gets values from Config Server
+
+
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -50,8 +55,17 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
         if (userRoles == null) userRoles = List.of(); // avoid NPE
 
         if (serviceKey != null) {
-            String allowedRolesStr = env.getProperty("roles.access." + serviceKey, "");
-            List<String> allowedRoles = Arrays.asList(allowedRolesStr.split(","));
+        	
+        	String allowedRolesStr = roleAccessConfig.getAccess().get(serviceKey);
+        	if (allowedRolesStr == null || allowedRolesStr.isBlank()) {
+        	    System.err.println(" No roles configured for service key: " + serviceKey);
+        	    return onError(exchange, "Configuration missing for service", HttpStatus.FORBIDDEN);
+        	}
+        	List<String> allowedRoles = Arrays.stream(allowedRolesStr.split(","))
+        	        .map(String::trim)
+        	        .filter(s -> !s.isEmpty())
+        	        .toList();
+
 
             boolean authorized = userRoles.stream().anyMatch(allowedRoles::contains);
             if (!authorized) {
@@ -76,6 +90,13 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
         if (path.startsWith("/orders")) return "order-service";
         if (path.startsWith("/billing")) return "billing-service";
         return null; // fallback for open endpoints
+    }
+    
+    private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus status) {
+        exchange.getResponse().setStatusCode(status);
+        DataBuffer buffer = exchange.getResponse()
+                .bufferFactory().wrap(err.getBytes(StandardCharsets.UTF_8));
+        return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 
 }
