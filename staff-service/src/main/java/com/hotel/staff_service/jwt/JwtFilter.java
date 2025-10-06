@@ -32,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
-            Claims claims = jwtUtil.extractClaims(token);
+            Claims claims = jwtUtil.extractAllClaims(token);
 
             String username = claims.getSubject();
             String role = (String) claims.get("role");
