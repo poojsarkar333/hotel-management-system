@@ -4,11 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 
-@Component
+import jakarta.annotation.PostConstruct;
+
+@RefreshScope
 @ConfigurationProperties(prefix = "roles.access")
 public class RoleAccessConfig {
+	
 	private Map<String, String> access = new HashMap<>();
 
 	public Map<String, String> getAccess() {
@@ -17,5 +20,10 @@ public class RoleAccessConfig {
 
 	public void setAccess(Map<String, String> access) {
 		this.access = access;
+	}
+
+	@PostConstruct
+	public void log() {
+		System.out.println("Loaded RBAC map: " + access);
 	}
 }
