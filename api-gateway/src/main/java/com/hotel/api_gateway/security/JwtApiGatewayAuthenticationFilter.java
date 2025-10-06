@@ -47,6 +47,7 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
 
         List<String> userRoles = jwtUtil.extractRoles(token);
         String serviceKey = resolveServiceKey(path);
+        if (userRoles == null) userRoles = List.of(); // avoid NPE
 
         if (serviceKey != null) {
             String allowedRolesStr = env.getProperty("roles.access." + serviceKey, "");

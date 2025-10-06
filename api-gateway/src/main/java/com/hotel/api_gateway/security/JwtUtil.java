@@ -2,6 +2,7 @@ package com.hotel.api_gateway.security;
 
 import java.security.Key;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,14 @@ public class JwtUtil {
     }
 
     public List<String> extractRoles(String token) {
-        return extractAllClaims(token).get("roles", List.class);
+        Claims claims = extractAllClaims(token);
+        Object roleObj = claims.get("role");
+        if (roleObj == null) return List.of();
+        if (roleObj instanceof String) return List.of((String) roleObj);
+        if (roleObj instanceof List<?> roles) {
+            return roles.stream().map(Object::toString).collect(Collectors.toList());
+        }
+        return List.of();
     }
 
     public boolean validateToken(String token) {
