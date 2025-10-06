@@ -21,58 +21,52 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtUtil {
 
-	private String secret = "javajwttestabcdefghijklmnopqrstuvwxyzjwtjava"; // store safely in production
+    // Must match api-gateway secret
+    private final String secret = "javajwttestabcdefghijklmnopqrstuvwxyzjwtjavajavajwttestabcdefghijklmnopqrstuvwxyzjwtjava";
 
-	private SecretKey getSigningKey() {
+    private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-    }	
-	
-	// Generate token with roles
-	public String generateToken(Staff staff) {
+    }
+
+    // Generate token with username + roles
+    public String generateToken(Staff staff) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", staff.getRole());
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(staff.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 
-	// Extract username
-	public String extractUsername(String token) {
-		return extractAllClaims(token).getSubject();
-	}
-
-	// Extract role(s)
-	public List<String> extractRoles(String token) {
-		Claims claims = extractAllClaims(token);
-		Object rolesObj = claims.get("role");
-
-		if (rolesObj instanceof String) {
-			return List.of((String) rolesObj); // single role
-		} else if (rolesObj instanceof List<?>) {
-			return ((List<?>) rolesObj).stream().map(Object::toString).collect(Collectors.toList());
-		}
-		return List.of(); // fallback
-	}
-
-	// Validate token
-	public boolean validateToken(String token) {
-		try {
-			extractAllClaims(token);
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public String extractUsername(String token) {
+        return extractAllClaims(token).getSubject();
+    }
+
+    public List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        Object roleObj = claims.get("role");
+        if (roleObj instanceof String) return List.of((String) roleObj);
+        if (roleObj instanceof List<?> roles) return roles.stream().map(Object::toString).collect(Collectors.toList());
+        return List.of();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            extractAllClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

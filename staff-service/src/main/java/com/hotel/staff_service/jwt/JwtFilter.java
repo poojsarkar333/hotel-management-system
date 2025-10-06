@@ -36,6 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String username = claims.getSubject();
             String role = (String) claims.get("role");
+            if (role == null) role = "STAFF"; // default for safety
 
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     username,
@@ -47,6 +48,11 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
+    }
+    
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/auth/");
     }
 }
 
