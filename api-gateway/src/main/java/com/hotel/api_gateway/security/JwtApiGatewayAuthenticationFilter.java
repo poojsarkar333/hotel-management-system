@@ -2,17 +2,19 @@ package com.hotel.api_gateway.security;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
@@ -24,7 +26,28 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private Environment env;
+    private RestTemplate restTemplate;
+
+    private Map<String,String> fetchRolesFromConfigServer() {
+        try {
+            String url = "http://localhost:8761/api-gateway/default";
+            Map<?,?> response = restTemplate.getForObject(url, Map.class);
+            List<Map<String,Object>> propertySources = (List<Map<String,Object>>) response.get("propertySources");
+            Map<String,Object> source = propertySources.get(0).get("source") instanceof Map ? (Map<String,Object>)propertySources.get(0).get("source") : Map.of();
+
+            Map<String,String> roles = new HashMap<>();
+            source.forEach((k,v) -> {
+                if(k.startsWith("roles.access.")) {
+                    String serviceKey = k.replace("roles.access.","");
+                    roles.put(serviceKey, v.toString());
+                }
+            });
+            return roles;
+        } catch(Exception e) {
+            e.printStackTrace();
+            return Map.of();
+        }
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -32,36 +55,36 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // 1️⃣ Public endpoints (login, health)
-        if (path.startsWith("/auth") || path.startsWith("/actuator")) {
+        // Allow public endpoints
+        if(path.startsWith("/auth") || path.startsWith("/actuator")) {
             return chain.filter(exchange);
         }
 
-        // 2️⃣ Extract Authorization header
+        // Extract token
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
         String token = authHeader.substring(7);
 
-        // 3️⃣ Validate JWT
-        if (!jwtUtil.validateToken(token)) {
+        // Validate JWT
+        if(!jwtUtil.validateToken(token)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-        // 4️⃣ Extract roles from JWT
         List<String> userRoles = jwtUtil.extractRoles(token);
-        if (userRoles == null) userRoles = List.of();
+        if(userRoles == null) userRoles = List.of();
 
-        // 5️⃣ Map path to service key
+        // Map URL to service key
         String serviceKey = resolveServiceKey(path);
-        if (serviceKey != null) {
-            // 🔹 Read roles dynamically from Environment at request time
-            String allowedRolesStr = env.getProperty("roles.access." + serviceKey, "");
-            if (allowedRolesStr.isBlank()) {
+        if(serviceKey != null) {
+            Map<String,String> rolesMap = fetchRolesFromConfigServer();
+            String allowedRolesStr = rolesMap.get(serviceKey);
+
+            if(allowedRolesStr == null || allowedRolesStr.isBlank()) {
                 return onError(exchange, "Configuration missing for service", HttpStatus.FORBIDDEN);
             }
 
@@ -78,13 +101,13 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
             boolean authorized = normalizedUserRoles.stream()
                     .anyMatch(allowedRoles::contains);
 
-            if (!authorized) {
+            if(!authorized) {
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }
         }
 
-        // 6️⃣ Forward user info and Authorization to downstream services
+        // Forward headers
         ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
                 .header("X-Auth-User", jwtUtil.extractUsername(token))
                 .header("X-Auth-Roles", String.join(",", userRoles))
@@ -94,13 +117,12 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
         return chain.filter(exchange.mutate().request(modifiedRequest).build());
     }
 
-    // Map URL prefix to service keys
     private String resolveServiceKey(String path) {
-        if (path.startsWith("/staff")) return "staff-service";
-        if (path.startsWith("/rooms")) return "room-service";
-        if (path.startsWith("/orders")) return "order-service";
-        if (path.startsWith("/billing")) return "billing-service";
-        return null; // open endpoints
+        if(path.startsWith("/staff")) return "staff-service";
+        if(path.startsWith("/rooms")) return "room-service";
+        if(path.startsWith("/orders")) return "order-service";
+        if(path.startsWith("/billing")) return "billing-service";
+        return null;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus status) {
@@ -111,6 +133,8 @@ public class JwtApiGatewayAuthenticationFilter implements GlobalFilter {
                         .wrap(err.getBytes(StandardCharsets.UTF_8))));
     }
 }
+
+
 
 
 
