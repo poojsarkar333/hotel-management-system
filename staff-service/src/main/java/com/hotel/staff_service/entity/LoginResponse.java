@@ -1,11 +1,11 @@
 package com.hotel.staff_service.entity;
 
-public class JwtResponse {
+public class LoginResponse {
 
     private String token;
 
-    public JwtResponse() {}
-    public JwtResponse(String token) {
+    public LoginResponse() {}
+    public LoginResponse(String token) {
         this.token = token;
     }
 
