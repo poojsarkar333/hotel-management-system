@@ -15,10 +15,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.log4j.Log4j;
 
 @Component
-@Log4j
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -30,7 +28,6 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain chain)
             throws ServletException, IOException {
     	
-    	logger.info("Inside JwtFilter : doFilterInternal()");
 
         String authorizationHeader = request.getHeader("Authorization");
 
