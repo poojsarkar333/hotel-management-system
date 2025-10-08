@@ -1,0 +1,7 @@
+permissions:
+  allowedActions:
+    - BILL_CREATE
+    - BILL_VIEW
+    - ORDER_CREATE
+    - ORDER_VIEW
+    - STAFF_ATTENDANCE
