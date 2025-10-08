@@ -1,0 +1,27 @@
+actions:
+  # Billing
+  - pathPattern: "/api/billing"
+    method: "POST"
+    action: "BILL_CREATE"
+  - pathPattern: "/api/billing/**"
+    method: "GET"
+    action: "BILL_VIEW"
+  - pathPattern: "/api/billing/**"
+    method: "DELETE"
+    action: "BILL_DELETE"
+
+  # Orders
+  - pathPattern: "/api/orders/**"
+    method: "POST"
+    action: "ORDER_CREATE"
+  - pathPattern: "/api/orders/**"
+    method: "GET"
+    action: "ORDER_VIEW"
+
+  # Staff
+  - pathPattern: "/api/staff/**/attendance"
+    method: "POST"
+    action: "STAFF_ATTENDANCE"
+  - pathPattern: "/api/staff/**"
+    method: "POST"
+    action: "STAFF_MANAGE"

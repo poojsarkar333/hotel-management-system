@@ -1,0 +1,4 @@
+permissions:
+  allowedActions:
+    - BILL_VIEW
+    - ORDER_VIEW

@@ -1,0 +1,8 @@
+permissions:
+  allowedActions:
+    - BILL_CREATE
+    - BILL_VIEW
+    - BILL_DELETE
+    - ORDER_CREATE
+    - ORDER_VIEW
+    - STAFF_MANAGE

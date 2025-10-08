@@ -15,7 +15,7 @@ public class RouteConfig {
                         .uri("lb://STAFF-SERVICE"))
                 .route("room-service", r -> r.path("/rooms/**")
                         .uri("lb://ROOM-SERVICE"))
-                .route("order-service", r -> r.path("/orders/**")
+                .route("order-service", r -> r.path("/api/orders/**")
                         .uri("lb://ORDER-SERVICE"))
                 .route("billing-service", r -> r.path("/billing/**")
                         .uri("lb://BILLING-SERVICE"))
