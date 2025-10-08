@@ -1,9 +1,18 @@
 package com.hotel.api_gateway.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import java.util.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ConfigLoaderService {
@@ -11,15 +20,21 @@ public class ConfigLoaderService {
 	private final ConfigServerClient configServerClient;
 	private final PermissionStore permissionStore;
 
-	// roles to load - you could make this configurable
-	private final List<String> roles = List.of("admin", "staff", "customer");
+    private final List<String> roles;
 
 	@Autowired
-	public ConfigLoaderService(ConfigServerClient client, PermissionStore store) {
-		this.configServerClient = client;
-		this.permissionStore = store;
-	}
+    public ConfigLoaderService(ConfigServerClient client, PermissionStore store,
+                               @Value("${permissions.roles}") String rolesStr) {
+        this.configServerClient = client;
+        this.permissionStore = store;
+        this.roles = Arrays.stream(rolesStr.split(","))
+                           .map(String::trim)
+                           .filter(s -> !s.isEmpty())
+                           .map(String::toLowerCase)
+                           .toList();
+    }
 
+    @Cacheable(value = "permissionsCache")
 	public void loadAll() {
 		// load roles
 		permissionStore.clearRoles();
@@ -37,6 +52,7 @@ public class ConfigLoaderService {
 				}
 				i++;
 			}
+			System.out.println("Roles loaded into cache: " + roles);
 
 			// Fallback: if no indexed values found, try direct or comma-separated
 			if (actions.isEmpty()) {
@@ -70,4 +86,10 @@ public class ConfigLoaderService {
 			i++;
 		}
 	}
+    
+    @CacheEvict(value = "permissionsCache", allEntries = true)
+    @Scheduled(fixedRate = 60 * 60 * 1000) // every 1 hour
+    public void refreshCache() {
+        loadAll();
+    }
 }
